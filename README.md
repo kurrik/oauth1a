@@ -5,11 +5,11 @@ An implementation of OAuth 1.0a in Go1.
 ## Installing
 Run:
 
-    go get github.com/kurrik/golibs/oauth1a
+    go get github.com/kurrik/oauth1a
 
 Include in your source:
 
-    import "github.com/kurrik/golibs/oauth1a"
+    import "github.com/kurrik/oauth1a"
 
 ## Testing
 Clone this repository, then run:
