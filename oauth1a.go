@@ -23,6 +23,8 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sort"
@@ -51,7 +53,6 @@ type Service struct {
 func (s *Service) Sign(request *http.Request, userConfig *UserConfig) error {
 	return s.Signer.Sign(request, s.ClientConfig, userConfig)
 }
-
 
 // Interface for any OAuth signing implementations.
 type Signer interface {
@@ -99,7 +100,6 @@ func (HmacSha1Signer) GenerateTimestamp() int64 {
 // Returns a map of all of the oauth_* (including signature) parameters for the
 // given request, and the signature base string used to generate the signature.
 func (s *HmacSha1Signer) GetOAuthParams(request *http.Request, clientConfig *ClientConfig, userConfig *UserConfig, nonce string, timestamp string) (map[string]string, string) {
-	request.ParseForm()
 	oauthParams := map[string]string{
 		"oauth_consumer_key":     clientConfig.ConsumerKey,
 		"oauth_nonce":            nonce,
@@ -119,9 +119,29 @@ func (s *HmacSha1Signer) GetOAuthParams(request *http.Request, clientConfig *Cli
 		//TODO: Support multiple parameters with the same name.
 		signingParams[key] = value[0]
 	}
-	for key, value := range request.Form {
-		//TODO: Support multiple parameters with the same name.
-		signingParams[key] = value[0]
+	if request.Body != nil && request.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+		request.ParseForm()
+		for key, value := range request.Form {
+			//TODO: Support multiple parameters with the same name.
+			signingParams[key] = value[0]
+		}
+		// Calling ParseForm clears out the reader.  It may be
+		// necessary to do this in a less destructive way, but for
+		// right now, this code reinitializes the body of the request.
+		var body io.Reader = strings.NewReader(request.Form.Encode())
+		rc, ok := body.(io.ReadCloser)
+		if !ok && body != nil {
+			rc = ioutil.NopCloser(body)
+		}
+		request.Body = rc
+		if body != nil {
+			switch v := body.(type) {
+			case *strings.Reader:
+				request.ContentLength = int64(v.Len())
+			case *bytes.Buffer:
+				request.ContentLength = int64(v.Len())
+			}
+		}
 	}
 	signingUrl := fmt.Sprintf("%v://%v%v", request.URL.Scheme, request.URL.Host, request.URL.Path)
 	signatureParts := []string{
@@ -147,7 +167,7 @@ func (s *HmacSha1Signer) GetSignature(consumerSecret string, tokenSecret string,
 // using the HMAC-SHA1 algorithm.
 func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig, userConfig *UserConfig) error {
 	var (
-		nonce string
+		nonce     string
 		timestamp string
 	)
 	if nonce = request.Header.Get("X-OAuth-Nonce"); nonce != "" {
