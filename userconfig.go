@@ -62,6 +62,7 @@ func (c *UserConfig) GetRequestToken(service *Service, client *http.Client) erro
 	if err != nil {
 		return err
 	}
+	request.Form = make(url.Values)
 	request.Form.Add("oauth_callback", service.ClientConfig.CallbackURL)
 	response, err := c.send(request, service, client)
 	if err != nil {
@@ -134,6 +135,7 @@ func (c *UserConfig) GetAccessToken(token string, verifier string, service *Serv
 	if err != nil {
 		return err
 	}
+	request.Form = make(url.Values)
 	request.Form.Add("oauth_verifier", verifier)
 	response, err := c.send(request, service, client)
 	if err != nil {
