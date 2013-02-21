@@ -68,3 +68,16 @@ func TestIntegration(t *testing.T) {
 		t.Errorf("Response returned code of %v", httpResponse.StatusCode)
 	}
 }
+
+func TestGetRequestToken(t *testing.T) {
+	if testing.Short() == true {
+		t.Log("Not running integration test because short was specified.")
+		return
+	}
+	service, userConfig := GetTwitterConfig(t)
+	httpClient := new(http.Client)
+	err := userConfig.GetRequestToken(service, httpClient)
+	if err != nil {
+		t.Errorf("Response had an error: %v", err)
+	}
+}
