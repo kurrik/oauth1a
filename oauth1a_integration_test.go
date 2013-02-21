@@ -37,8 +37,8 @@ func GetTwitterConfig(t *testing.T) (*Service, *UserConfig) {
 	}
 	service := &Service{
 		RequestURL:   "https://api.twitter.com/oauth/request_token",
-		AuthorizeURL: "https://api.twitter.com/oauth/request_token",
-		AccessURL:    "https://api.twitter.com/oauth/request_token",
+		AuthorizeURL: "https://api.twitter.com/oauth/authorize",
+		AccessURL:    "https://api.twitter.com/oauth/access_token",
 		ClientConfig: &ClientConfig{
 			ConsumerKey:    key,
 			ConsumerSecret: secret,
@@ -74,7 +74,8 @@ func TestGetRequestToken(t *testing.T) {
 		t.Log("Not running integration test because short was specified.")
 		return
 	}
-	service, userConfig := GetTwitterConfig(t)
+	service, _ := GetTwitterConfig(t)
+	userConfig := new(UserConfig)
 	httpClient := new(http.Client)
 	err := userConfig.GetRequestToken(service, httpClient)
 	if err != nil {
