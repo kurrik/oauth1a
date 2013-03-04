@@ -15,11 +15,11 @@
 package oauth1a
 
 import (
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
-	"io"
 )
 
 var user = NewAuthorizedConfig("token", "secret")
@@ -71,20 +71,31 @@ func TestSlashInParameter(t *testing.T) {
 }
 
 func TestSlashInQuerystring(t *testing.T) {
-	api_url := "https://stream.twitter.com/1.1/statuses/filter.json?track=example.com/query"
-	var body io.Reader
-	request, _ := http.NewRequest("POST", api_url, body)
+	var (
+		expected  string
+		raw_query string
+		api_url   string
+		body      io.Reader
+		request   *http.Request
+		nonce     string = "884275759fbab914654b50ae643c563a"
+		timestamp string = "1362435218"
+	)
+	api_url = "https://stream.twitter.com/1.1/statuses/filter.json?track=example.com/query"
+	request, _ = http.NewRequest("POST", api_url, body)
 	service.Sign(request, user)
-	nonce := "884275759fbab914654b50ae643c563a"
-	timestamp := "1362435218"
+
+	expected = "track=example.com%2Fquery"
+	raw_query = request.URL.RawQuery
+	if raw_query != expected {
+		t.Errorf("Query parameter incorrect, got %v, expected %v", raw_query, expected)
+	}
 	params, _ := signer.GetOAuthParams(request, client, user, nonce, timestamp)
 	signature := params["oauth_signature"]
-	expected := "OAldqvRrKDXRGZ9BqSi2CqeVH0g="
+	expected = "OAldqvRrKDXRGZ9BqSi2CqeVH0g="
 	if signature != expected {
 		t.Errorf("Signature %v did not match expected %v", signature, expected)
 	}
 }
-
 
 func TestNonceOverride(t *testing.T) {
 	api_url := "https://example.com/endpoint"

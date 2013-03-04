@@ -169,6 +169,8 @@ func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig,
 	var (
 		nonce     string
 		timestamp string
+		values    url.Values
+		buf       *bytes.Buffer
 	)
 	if nonce = request.Header.Get("X-OAuth-Nonce"); nonce != "" {
 		request.Header.Del("X-OAuth-Nonce")
@@ -190,6 +192,20 @@ func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig,
 	sort.Strings(headerParts)
 	oauthHeader := "OAuth " + strings.Join(headerParts, ", ")
 	request.Header["Authorization"] = []string{oauthHeader}
+
+	// This bit of fussing is because '/' is not encoded correctly
+	// by the URL package, so we encode manually.
+	values = request.URL.Query()
+	if len(values) > 0 {
+		buf = bytes.NewBufferString("")
+		for key, val := range values {
+			buf.Write([]byte("?"))
+			buf.Write([]byte(Rfc3986Escape(key)))
+			buf.Write([]byte("="))
+			buf.Write([]byte(Rfc3986Escape(val[0])))
+		}
+		request.URL.RawQuery = buf.String()[1:]
+	}
 	return nil
 }
 
