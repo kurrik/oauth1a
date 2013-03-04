@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"io"
 )
 
 var user = NewAuthorizedConfig("token", "secret")
@@ -68,6 +69,22 @@ func TestSlashInParameter(t *testing.T) {
 		t.Errorf("Signature %v did not match expected %v", signature, expected)
 	}
 }
+
+func TestSlashInQuerystring(t *testing.T) {
+	api_url := "https://stream.twitter.com/1.1/statuses/filter.json?track=example.com/query"
+	var body io.Reader
+	request, _ := http.NewRequest("POST", api_url, body)
+	service.Sign(request, user)
+	nonce := "884275759fbab914654b50ae643c563a"
+	timestamp := "1362435218"
+	params, _ := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	signature := params["oauth_signature"]
+	expected := "OAldqvRrKDXRGZ9BqSi2CqeVH0g="
+	if signature != expected {
+		t.Errorf("Signature %v did not match expected %v", signature, expected)
+	}
+}
+
 
 func TestNonceOverride(t *testing.T) {
 	api_url := "https://example.com/endpoint"
