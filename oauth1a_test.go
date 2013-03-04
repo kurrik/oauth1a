@@ -16,8 +16,9 @@ package oauth1a
 
 import (
 	"net/http"
-	"testing"
+	"net/url"
 	"strings"
+	"testing"
 )
 
 var user = NewAuthorizedConfig("token", "secret")
@@ -39,8 +40,8 @@ var service = &Service{
 }
 
 func TestSignature(t *testing.T) {
-	url := "https://example.com/endpoint"
-	request, _ := http.NewRequest("GET", url, nil)
+	api_url := "https://example.com/endpoint"
+	request, _ := http.NewRequest("GET", api_url, nil)
 	service.Sign(request, user)
 	params, _ := signer.GetOAuthParams(request, client, user, "nonce", "timestamp")
 	signature := params["oauth_signature"]
@@ -50,13 +51,31 @@ func TestSignature(t *testing.T) {
 	}
 }
 
+func TestSlashInParameter(t *testing.T) {
+	api_url := "https://stream.twitter.com/1.1/statuses/filter.json"
+	data := url.Values{}
+	data.Set("track", "example.com/abcd")
+	body := strings.NewReader(data.Encode())
+	request, _ := http.NewRequest("POST", api_url, body)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	service.Sign(request, user)
+	nonce := "bf2cb6d611e59f99103238fc9a3bb8d8"
+	timestamp := "1362434376"
+	params, _ := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	signature := params["oauth_signature"]
+	expected := "LcxylEOnNdgoKSJi7jX07mxcvfM="
+	if signature != expected {
+		t.Errorf("Signature %v did not match expected %v", signature, expected)
+	}
+}
+
 func TestNonceOverride(t *testing.T) {
-	url := "https://example.com/endpoint"
-	request, _ := http.NewRequest("GET", url, nil)
+	api_url := "https://example.com/endpoint"
+	request, _ := http.NewRequest("GET", api_url, nil)
 	request.Header.Set("X-OAuth-Nonce", "12345")
 	service.Sign(request, user)
 	if request.Header.Get("X-OAuth-Nonce") != "" {
-		t.Errorf("Nonce override should be cleared after signing");
+		t.Errorf("Nonce override should be cleared after signing")
 	}
 	header := request.Header.Get("Authorization")
 	if !strings.Contains(header, "oauth_nonce=\"12345\"") {
@@ -68,12 +87,12 @@ func TestNonceOverride(t *testing.T) {
 }
 
 func TestTimestampOverride(t *testing.T) {
-	url := "https://example.com/endpoint"
-	request, _ := http.NewRequest("GET", url, nil)
+	api_url := "https://example.com/endpoint"
+	request, _ := http.NewRequest("GET", api_url, nil)
 	request.Header.Set("X-OAuth-Timestamp", "54321")
 	service.Sign(request, user)
 	if request.Header.Get("X-OAuth-Timestamp") != "" {
-		t.Errorf("Timestamp override should be cleared after signing");
+		t.Errorf("Timestamp override should be cleared after signing")
 	}
 	header := request.Header.Get("Authorization")
 	if !strings.Contains(header, "oauth_timestamp=\"54321\"") {
