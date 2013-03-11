@@ -97,6 +97,25 @@ func TestSlashInQuerystring(t *testing.T) {
 	}
 }
 
+func TestMultipleQueryValues(t *testing.T) {
+	var (
+		expected  string
+		raw_query string
+		api_url   string
+		body      io.Reader
+		request   *http.Request
+	)
+	api_url = "https://stream.twitter.com/1.1/statuses/filter.json?track=example&count=100"
+	request, _ = http.NewRequest("POST", api_url, body)
+	service.Sign(request, user)
+
+	expected = "track=example&count=100"
+	raw_query = request.URL.RawQuery
+	if raw_query != expected {
+		t.Errorf("Query parameter incorrect, got %v, expected %v", raw_query, expected)
+	}
+}
+
 func TestNonceOverride(t *testing.T) {
 	api_url := "https://example.com/endpoint"
 	request, _ := http.NewRequest("GET", api_url, nil)

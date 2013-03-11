@@ -199,7 +199,7 @@ func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig,
 	if len(values) > 0 {
 		buf = bytes.NewBufferString("")
 		for key, val := range values {
-			buf.Write([]byte("?"))
+			buf.Write([]byte("&"))
 			buf.Write([]byte(Rfc3986Escape(key)))
 			buf.Write([]byte("="))
 			buf.Write([]byte(Rfc3986Escape(val[0])))
