@@ -221,7 +221,7 @@ func Rfc3986Escape(input string) string {
 	// in go parses runes, not bytes.
 	for _, c := range []byte(input) {
 		if strings.IndexAny(string(c), UNESCAPE_CHARS) == -1 {
-			encoded := fmt.Sprintf("%%%X", c)
+			encoded := fmt.Sprintf("%%%02X", c)
 			output.Write([]uint8(encoded))
 		} else {
 			output.WriteByte(uint8(c))

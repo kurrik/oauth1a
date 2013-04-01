@@ -52,6 +52,44 @@ func TestSignature(t *testing.T) {
 	}
 }
 
+func TestNewlineInParameter(t *testing.T) {
+	api_url := "https://api.twitter.com/1.1/statuses/update.json"
+	data := url.Values{}
+	data.Set("status", "Hello\nWorld")
+	body := strings.NewReader(data.Encode())
+	request, _ := http.NewRequest("POST", api_url, body)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	service.Sign(request, user)
+	nonce := "a87d3d52a22f467e956bd62aece16386"
+	timestamp := "1364836266"
+	params, base := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	t.Logf("Signature Base String: %v\n", base)
+	signature := params["oauth_signature"]
+	expected := "5ODYPjb2rDgLfTEiJBdtaeqx0tw="
+	if signature != expected {
+		t.Errorf("Signature %v did not match expected %v", signature, expected)
+	}
+}
+
+func TestNewLineCarriageReturnInParameter(t *testing.T) {
+	api_url := "https://api.twitter.com/1.1/statuses/update.json"
+	data := url.Values{}
+	data.Set("status", "Hello\r\nWorld")
+	body := strings.NewReader(data.Encode())
+	request, _ := http.NewRequest("POST", api_url, body)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	service.Sign(request, user)
+	nonce := "a87d3d52a22f467e956bd62aece16386"
+	timestamp := "1364836266"
+	params, base := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	t.Logf("Signature Base String: %v\n", base)
+	signature := params["oauth_signature"]
+	expected := "b51+W8Igb0m4xcP1Hysr6CBJo4o="
+	if signature != expected {
+		t.Errorf("Signature %v did not match expected %v", signature, expected)
+	}
+}
+
 func TestSlashInParameter(t *testing.T) {
 	api_url := "https://stream.twitter.com/1.1/statuses/filter.json"
 	data := url.Values{}
@@ -153,6 +191,8 @@ func TestTimestampOverride(t *testing.T) {
 var ESCAPE_TESTS = map[string]string{
 	"Ā": "%C4%80",
 	"㤹": "%E3%A4%B9",
+	"\n": "%0A",
+	"\r": "%0D",
 }
 
 func TestEscaping(t *testing.T) {
