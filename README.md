@@ -33,7 +33,7 @@ This will run an integration test against the Twitter
 `/account/verify_credentials.json` endpoint.
 
 ## Using
-The best bet will be to check `oauth1a_test.go` for usage.
+A good approach wil be to check `oauth1a_test.go` for usage.
 
 As a vague example, here is code to configure the library for accessing Twitter:
 
@@ -54,7 +54,7 @@ To obtain user credentials:
     httpClient := new(http.Client)
     userConfig := &oauth1a.UserConfig{}
     userConfig.GetRequestToken(service, httpClient)
-    url, _ := userConfig.GetAuthorizeUrl(service)
+    url, _ := userConfig.GetAuthorizeURL(service)
     var token string
     var verifier string
     // Redirect the user to <url> and parse out token and verifier from the response.
@@ -75,4 +75,21 @@ To send an authenticated request:
     httpResponse, err = httpClient.Do(httpRequest)
 
 
+## Examples
 
+**examples/twitter.go** - A three legged example which uses Twitter's API.
+To run, cd to the examples directory and then run:
+
+    go run twitter.go -key=<TWITTER_CONSUMER_KEY> -secret=<TWITTER_CONSUMER_SECRET>
+
+This will host a server on `localhost:10000` (use the `-port` flag to change the
+port this runs on).  Navigate to `http://localhost:10000` and then follow the
+sign in flow.
+
+Note that this example implements a rudimentary session mechanism so that the
+callback can be matched to the user who initiated the sign in session.  Otherwise,
+it would be possible for one user to initiate a sign in session and another user
+to complete it.  This is a best practice but imposes a requirement for the
+auth flow to be stateful.  If you understand the risks in removing this check
+from your application, it is possible to implement the flow in a stateless
+manner.
