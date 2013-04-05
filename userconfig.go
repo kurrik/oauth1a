@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // Container for user-specific keys and secrets related to the OAuth process.
@@ -58,12 +59,16 @@ func (c *UserConfig) send(request *http.Request, service *Service, client *http.
 
 // Issue a request to obtain a Request token.
 func (c *UserConfig) GetRequestToken(service *Service, client *http.Client) error {
-	request, err := http.NewRequest("POST", service.RequestURL, nil)
+	data := url.Values{}
+	if service.ClientConfig.CallbackURL != "" {
+		data.Set("oauth_callback", service.ClientConfig.CallbackURL)
+	}
+	body := strings.NewReader(data.Encode())
+	request, err := http.NewRequest("POST", service.RequestURL, body)
 	if err != nil {
 		return err
 	}
-	request.Form = make(url.Values)
-	request.Form.Add("oauth_callback", service.ClientConfig.CallbackURL)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := c.send(request, service, client)
 	if err != nil {
 		return err
@@ -124,19 +129,26 @@ func (c *UserConfig) ParseAuthorize(request *http.Request, service *Service) (st
 
 // Issue a request to exchange the current request token for an access token.
 func (c *UserConfig) GetAccessToken(token string, verifier string, service *Service, client *http.Client) error {
-	if c.RequestTokenKey == "" || c.RequestTokenSecret == "" {
-		return errors.New("No configured request token")
-	}
-	if c.RequestTokenKey != token {
+	// This code used to error out if RequestTokenKey were empty, but
+	// in the interest of being able to operate in a stateless manner this
+	// has been removed.  If you want to make sure that the request token
+	// is validated against what is being returned, populate the UserConfig
+	// with a request token stored server-side somewhere, accessed by the
+	// user's session.
+	if c.RequestTokenKey != "" && c.RequestTokenKey != token {
 		return errors.New("Returned token did not match request token")
 	}
 	c.Verifier = verifier
-	request, err := http.NewRequest("POST", service.AccessURL, nil)
+	data := url.Values{}
+	if service.ClientConfig.CallbackURL != "" {
+		data.Set("oauth_verifier", verifier)
+	}
+	body := strings.NewReader(data.Encode())
+	request, err := http.NewRequest("POST", service.AccessURL, body)
 	if err != nil {
 		return err
 	}
-	request.Form = make(url.Values)
-	request.Form.Add("oauth_verifier", verifier)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := c.send(request, service, client)
 	if err != nil {
 		return err
