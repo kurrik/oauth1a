@@ -15,7 +15,7 @@
 package oauth1a
 
 import (
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -52,7 +52,8 @@ func (c *UserConfig) send(request *http.Request, service *Service, client *http.
 		return nil, err
 	}
 	if response.StatusCode != 200 {
-		return nil, errors.New("Endpoint response: " + response.Status)
+		body, _ := ioutil.ReadAll(response.Body)
+		return nil, fmt.Errorf("Endpoint response: %v %v", response.Status, string(body))
 	}
 	return response, nil
 }
@@ -89,12 +90,12 @@ func (c *UserConfig) parseRequestToken(response *http.Response) error {
 	tokenKey := params.Get("oauth_token")
 	tokenSecret := params.Get("oauth_token_secret")
 	if tokenKey == "" || tokenSecret == "" {
-		return errors.New("No token or secret found")
+		return fmt.Errorf("No token or secret found")
 	}
 	c.RequestTokenKey = tokenKey
 	c.RequestTokenSecret = tokenSecret
 	if params.Get("oauth_callback_confirmed") == "false" {
-		return errors.New("OAuth callback not confirmed")
+		return fmt.Errorf("OAuth callback not confirmed")
 	}
 	return nil
 }
@@ -103,7 +104,7 @@ func (c *UserConfig) parseRequestToken(response *http.Response) error {
 // OAuth-protected data.
 func (c *UserConfig) GetAuthorizeURL(service *Service) (string, error) {
 	if c.RequestTokenKey == "" || c.RequestTokenSecret == "" {
-		return "", errors.New("No configured request token")
+		return "", fmt.Errorf("No configured request token")
 	}
 	token := url.QueryEscape(c.RequestTokenKey)
 	return service.AuthorizeURL + "?oauth_token=" + token, nil
@@ -122,7 +123,7 @@ func (c *UserConfig) ParseAuthorize(request *http.Request, service *Service) (st
 		verifier = request.Form.Get("oauth_verifier")
 	}
 	if token == "" || verifier == "" {
-		return "", "", errors.New("Token or verifier were missing from response")
+		return "", "", fmt.Errorf("Token or verifier were missing from response")
 	}
 	return token, verifier, nil
 }
@@ -136,7 +137,7 @@ func (c *UserConfig) GetAccessToken(token string, verifier string, service *Serv
 	// with a request token stored server-side somewhere, accessed by the
 	// user's session.
 	if c.RequestTokenKey != "" && c.RequestTokenKey != token {
-		return errors.New("Returned token did not match request token")
+		return fmt.Errorf("Returned token did not match request token")
 	}
 	c.Verifier = verifier
 	data := url.Values{}
@@ -171,7 +172,7 @@ func (c *UserConfig) parseAccessToken(response *http.Response) error {
 	tokenKey := params.Get("oauth_token")
 	tokenSecret := params.Get("oauth_token_secret")
 	if tokenKey == "" || tokenSecret == "" {
-		return errors.New("No token or secret found")
+		return fmt.Errorf("No token or secret found")
 	}
 	c.AccessTokenKey = tokenKey
 	c.AccessTokenSecret = tokenSecret
