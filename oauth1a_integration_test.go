@@ -57,7 +57,7 @@ func TestIntegration(t *testing.T) {
 	}
 	service, userConfig := GetTwitterConfig(t)
 	httpClient := new(http.Client)
-	url := "https://api.twitter.com/1/account/verify_credentials.json"
+	url := "https://api.twitter.com/1.1/account/verify_credentials.json"
 	httpRequest, _ := http.NewRequest("GET", url, nil)
 	service.Sign(httpRequest, userConfig)
 	httpResponse, err := httpClient.Do(httpRequest)
@@ -66,6 +66,9 @@ func TestIntegration(t *testing.T) {
 	}
 	if httpResponse.StatusCode != 200 {
 		t.Errorf("Response returned code of %v", httpResponse.StatusCode)
+	}
+	if body, err := ioutil.ReadAll(httpResponse.Body); err == nil {
+		t.Logf("Got %v\n", string(body))
 	}
 }
 
