@@ -77,10 +77,10 @@ To send an authenticated request:
 
 ## Examples
 
-**examples/twitter.go** - A three legged example which uses Twitter's API.
+[github.com/twittergo-examples/sign_in/main.go](https://github.com/kurrik/twittergo-examples/blob/master/sign_in/main.go) - A three legged example which uses Twitter's API.
 To run, cd to the examples directory and then run:
 
-    go run twitter.go -key=<TWITTER_CONSUMER_KEY> -secret=<TWITTER_CONSUMER_SECRET>
+    go run main.go -key=<TWITTER_CONSUMER_KEY> -secret=<TWITTER_CONSUMER_SECRET>
 
 This will host a server on `localhost:10000` (use the `-port` flag to change the
 port this runs on).  Navigate to `http://localhost:10000` and then follow the
