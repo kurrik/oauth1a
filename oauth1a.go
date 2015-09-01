@@ -64,25 +64,6 @@ type Signer interface {
 // A Signer which implements the HMAC-SHA1 signing algorithm.
 type HmacSha1Signer struct{}
 
-// Sort a set of request parameters alphabetically, and encode according to the
-// OAuth 1.0a specification.
-func (HmacSha1Signer) encodeParameters(params map[string]string) string {
-	keys := make([]string, len(params))
-	encodedParts := make([]string, len(params))
-	i := 0
-	for key, _ := range params {
-		keys[i] = key
-		i += 1
-	}
-	sort.Strings(keys)
-	for i, key := range keys {
-		value := params[key]
-		encoded := Rfc3986Escape(key) + "=" + Rfc3986Escape(value)
-		encodedParts[i] = encoded
-	}
-	return url.QueryEscape(strings.Join(encodedParts, "&"))
-}
-
 // Generate a unique nonce value.
 func (HmacSha1Signer) generateNonce() string {
 	nonce := make([]byte, 16)
@@ -112,43 +93,32 @@ func (s *HmacSha1Signer) GetOAuthParams(request *http.Request, clientConfig *Cli
 	if tokenKey != "" {
 		oauthParams["oauth_token"] = tokenKey
 	}
-	signingParams := map[string]string{}
+
+	signingParams := request.URL.Query()
 	for key, value := range oauthParams {
-		signingParams[key] = value
+		signingParams.Set(key, value)
 	}
-	for key, value := range request.URL.Query() {
-		//TODO: Support multiple parameters with the same name.
-		signingParams[key] = value[0]
-	}
+
 	if request.Body != nil && request.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
 		request.ParseForm()
-		for key, value := range request.Form {
-			//TODO: Support multiple parameters with the same name.
-			signingParams[key] = value[0]
+		for key, values := range request.Form {
+			for _, v := range values {
+				signingParams.Add(key, v)
+			}
 		}
 		// Calling ParseForm clears out the reader.  It may be
 		// necessary to do this in a less destructive way, but for
 		// right now, this code reinitializes the body of the request.
-		var body io.Reader = strings.NewReader(request.Form.Encode())
-		rc, ok := body.(io.ReadCloser)
-		if !ok && body != nil {
-			rc = ioutil.NopCloser(body)
-		}
-		request.Body = rc
-		if body != nil {
-			switch v := body.(type) {
-			case *strings.Reader:
-				request.ContentLength = int64(v.Len())
-			case *bytes.Buffer:
-				request.ContentLength = int64(v.Len())
-			}
-		}
+		body := strings.NewReader(request.Form.Encode())
+		request.Body = ioutil.NopCloser(body)
+		request.ContentLength = int64(body.Len())
 	}
+
 	signingUrl := fmt.Sprintf("%v://%v%v", request.URL.Scheme, request.URL.Host, request.URL.Path)
 	signatureParts := []string{
 		request.Method,
 		url.QueryEscape(signingUrl),
-		s.encodeParameters(signingParams)}
+		url.QueryEscape(sortedQueryString(signingParams))}
 	signatureBase := strings.Join(signatureParts, "&")
 	oauthParams["oauth_signature"] = s.GetSignature(clientConfig.ConsumerSecret, tokenSecret, signatureBase)
 	return oauthParams, signatureBase
@@ -170,8 +140,6 @@ func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig,
 	var (
 		nonce     string
 		timestamp string
-		values    url.Values
-		buf       *bytes.Buffer
 	)
 	if nonce = request.Header.Get("X-OAuth-Nonce"); nonce != "" {
 		request.Header.Del("X-OAuth-Nonce")
@@ -194,20 +162,54 @@ func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig,
 	oauthHeader := "OAuth " + strings.Join(headerParts, ", ")
 	request.Header["Authorization"] = []string{oauthHeader}
 
-	// This bit of fussing is because '/' is not encoded correctly
-	// by the URL package, so we encode manually.
-	values = request.URL.Query()
-	if len(values) > 0 {
-		buf = bytes.NewBufferString("")
-		for key, val := range values {
-			buf.Write([]byte("&"))
-			buf.Write([]byte(Rfc3986Escape(key)))
-			buf.Write([]byte("="))
-			buf.Write([]byte(Rfc3986Escape(val[0])))
-		}
-		request.URL.RawQuery = buf.String()[1:]
-	}
+	request.URL.RawQuery = sortedQueryString(request.URL.Query())
 	return nil
+}
+
+// This bit of fussing is because '/' is not encoded correctly
+// by the URL package, so we encode manually.
+func sortedQueryString(values url.Values) string {
+	if len(values) == 0 {
+		return ""
+	}
+	pairs := make(sortedPairs, 0)
+	for k, vs := range values {
+		escK := Rfc3986Escape(k)
+		for _, v := range vs {
+			pairs = append(pairs, pair{escK, Rfc3986Escape(v)})
+		}
+	}
+	sort.Sort(pairs)
+
+	buf := new(bytes.Buffer)
+	buf.WriteString(pairs[0].k)
+	buf.WriteByte('=')
+	buf.WriteString(pairs[0].v)
+
+	for _, p := range pairs[1:] {
+		buf.WriteByte('&')
+		buf.WriteString(p.k)
+		buf.WriteByte('=')
+		buf.WriteString(p.v)
+	}
+	return buf.String()
+}
+
+type pair struct{ k, v string }
+type sortedPairs []pair
+
+func (sp sortedPairs) Len() int {
+	return len(sp)
+}
+func (p sortedPairs) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+func (p sortedPairs) Less(i, j int) bool {
+	if p[i].k == p[j].k {
+		return p[i].v < p[j].v
+	}
+	return p[i].k < p[j].k
 }
 
 // Escapes a string more in line with Rfc3986 than http.URLEscape.
