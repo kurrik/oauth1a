@@ -20,8 +20,10 @@ package oauth1a
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha1"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -81,19 +83,18 @@ func (HmacSha1Signer) encodeParameters(params map[string]string) string {
 	return url.QueryEscape(strings.Join(encodedParts, "&"))
 }
 
-// Generate a unique nonce value.  Should not be called more than once per
-// nanosecond
-// TODO: Come up with a better generation method.
-func (HmacSha1Signer) GenerateNonce() string {
-	ns := time.Now()
-	token := fmt.Sprintf("OAuth Client Lib %v", ns)
-	h := sha1.New()
-	h.Write([]byte(token))
-	return fmt.Sprintf("%x", h.Sum(nil))
+// Generate a unique nonce value.
+func (HmacSha1Signer) generateNonce() string {
+	nonce := make([]byte, 16)
+	_, err := io.ReadFull(rand.Reader, nonce)
+	if err != nil {
+		panic("unable to read from crypto/rand.Reader; process is insecure: " + err.Error())
+	}
+	return hex.EncodeToString(nonce)
 }
 
 // Generate a timestamp.
-func (HmacSha1Signer) GenerateTimestamp() int64 {
+func (HmacSha1Signer) generateTimestamp() int64 {
 	return time.Now().UTC().Unix()
 }
 
@@ -175,12 +176,12 @@ func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig,
 	if nonce = request.Header.Get("X-OAuth-Nonce"); nonce != "" {
 		request.Header.Del("X-OAuth-Nonce")
 	} else {
-		nonce = s.GenerateNonce()
+		nonce = s.generateNonce()
 	}
 	if timestamp = request.Header.Get("X-OAuth-Timestamp"); timestamp != "" {
 		request.Header.Del("X-OAuth-Timestamp")
 	} else {
-		timestamp = fmt.Sprintf("%v", s.GenerateTimestamp())
+		timestamp = fmt.Sprintf("%v", s.generateTimestamp())
 	}
 	oauthParams, _ := s.GetOAuthParams(request, clientConfig, userConfig, nonce, timestamp)
 	headerParts := make([]string, len(oauthParams))
