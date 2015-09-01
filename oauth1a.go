@@ -206,11 +206,10 @@ func (p sortedPairs) Swap(i, j int) {
 }
 
 func (p sortedPairs) Less(i, j int) bool {
-	sgn := strings.Compare(p[i].k, p[j].k)
-	if sgn == 0 {
-		sgn = strings.Compare(p[i].v, p[j].v)
+	if p[i].k == p[j].k {
+		return p[i].v < p[j].v
 	}
-	return sgn < 0
+	return p[i].k < p[j].k
 }
 
 // Escapes a string more in line with Rfc3986 than http.URLEscape.
