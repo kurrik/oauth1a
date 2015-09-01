@@ -152,11 +152,11 @@ func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig,
 		timestamp = fmt.Sprintf("%v", s.generateTimestamp())
 	}
 	oauthParams, _ := s.GetOAuthParams(request, clientConfig, userConfig, nonce, timestamp)
-	headerParts := make([]string, len(oauthParams))
-	var i = 0
+
+	headerParts := make([]string, 0, len(oauthParams))
 	for key, value := range oauthParams {
-		headerParts[i] = Rfc3986Escape(key) + "=\"" + Rfc3986Escape(value) + "\""
-		i += 1
+		val := Rfc3986Escape(key) + "=\"" + Rfc3986Escape(value) + "\""
+		headerParts = append(headerParts, val)
 	}
 	sort.Strings(headerParts)
 	oauthHeader := "OAuth " + strings.Join(headerParts, ", ")
