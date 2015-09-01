@@ -143,14 +143,14 @@ func TestMultipleQueryValues(t *testing.T) {
 		body      io.Reader
 		request   *http.Request
 	)
-	api_url = "https://stream.twitter.com/1.1/statuses/filter.json?track=example&count=100"
+	api_url = "https://stream.twitter.com/1.1/statuses/filter.json?track=example&count=200&count=100"
 	request, _ = http.NewRequest("POST", api_url, body)
 	service.Sign(request, user)
 
-	expected = "track=example&count=100"
+	expected = "count=100&count=200&track=example"
 	raw_query = request.URL.RawQuery
 	if raw_query != expected {
-		t.Errorf("Query parameter incorrect, got %v, expected %v", raw_query, expected)
+		t.Errorf("Query parameter incorrect, got %#v, expected %#v", raw_query, expected)
 	}
 }
 
@@ -189,8 +189,8 @@ func TestTimestampOverride(t *testing.T) {
 }
 
 var ESCAPE_TESTS = map[string]string{
-	"Ā": "%C4%80",
-	"㤹": "%E3%A4%B9",
+	"Ā":  "%C4%80",
+	"㤹":  "%E3%A4%B9",
 	"\n": "%0A",
 	"\r": "%0D",
 }
