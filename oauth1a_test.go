@@ -189,8 +189,8 @@ func TestTimestampOverride(t *testing.T) {
 }
 
 var ESCAPE_TESTS = map[string]string{
-	"Ā": "%C4%80",
-	"㤹": "%E3%A4%B9",
+	"Ā":  "%C4%80",
+	"㤹":  "%E3%A4%B9",
 	"\n": "%0A",
 	"\r": "%0D",
 }

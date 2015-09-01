@@ -209,22 +209,25 @@ func (s *HmacSha1Signer) Sign(request *http.Request, clientConfig *ClientConfig,
 	return nil
 }
 
-// Characters which should not be escaped according to RFC 3986.
-const UNESCAPE_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~"
-
 // Escapes a string more in line with Rfc3986 than http.URLEscape.
 // URLEscape was converting spaces to "+" instead of "%20", which was messing up
 // the signing of requests.
 func Rfc3986Escape(input string) string {
-	var output bytes.Buffer
+	output := new(bytes.Buffer)
 	// Convert string to bytes because iterating over a unicode string
 	// in go parses runes, not bytes.
 	for _, c := range []byte(input) {
-		if strings.IndexAny(string(c), UNESCAPE_CHARS) == -1 {
-			encoded := fmt.Sprintf("%%%02X", c)
-			output.Write([]uint8(encoded))
-		} else {
-			output.WriteByte(uint8(c))
+		switch {
+		case '0' <= c && c <= '9':
+			fallthrough
+		case 'a' <= c && c <= 'z':
+			fallthrough
+		case 'A' <= c && c <= 'Z':
+			fallthrough
+		case c == '-' || c == '.' || c == '_' || c == '~':
+			output.WriteByte(c)
+		default:
+			fmt.Fprintf(output, "%%%02X", c)
 		}
 	}
 	return string(output.Bytes())
