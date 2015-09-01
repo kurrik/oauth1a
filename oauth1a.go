@@ -216,22 +216,39 @@ func (p sortedPairs) Less(i, j int) bool {
 // URLEscape was converting spaces to "+" instead of "%20", which was messing up
 // the signing of requests.
 func Rfc3986Escape(input string) string {
+	firstEsc := -1
+	b := []byte(input)
+	for i, c := range b {
+		if !isSafeChar(c) {
+			firstEsc = i
+			break
+		}
+	}
+
+	// If nothing needed to be escaped, then the input is clean and
+	// we're done.
+	if firstEsc == -1 {
+		return input
+	}
+
+	// If something did need to be escaped, write the prefix that was
+	// fine to the buffer and iterate through the rest of the bytes.
 	output := new(bytes.Buffer)
-	// Convert string to bytes because iterating over a unicode string
-	// in go parses runes, not bytes.
-	for _, c := range []byte(input) {
-		switch {
-		case '0' <= c && c <= '9':
-			fallthrough
-		case 'a' <= c && c <= 'z':
-			fallthrough
-		case 'A' <= c && c <= 'Z':
-			fallthrough
-		case c == '-' || c == '.' || c == '_' || c == '~':
+	output.Write(b[:firstEsc])
+
+	for _, c := range b[firstEsc:] {
+		if isSafeChar(c) {
 			output.WriteByte(c)
-		default:
+		} else {
 			fmt.Fprintf(output, "%%%02X", c)
 		}
 	}
-	return string(output.Bytes())
+	return output.String()
+}
+
+func isSafeChar(c byte) bool {
+	return ('0' <= c && c <= '9') ||
+		('a' <= c && c <= 'z') ||
+		('A' <= c && c <= 'Z') ||
+		c == '-' || c == '.' || c == '_' || c == '~'
 }
