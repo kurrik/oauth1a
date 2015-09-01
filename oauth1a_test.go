@@ -189,16 +189,22 @@ func TestTimestampOverride(t *testing.T) {
 }
 
 var ESCAPE_TESTS = map[string]string{
-	"Ā":  "%C4%80",
-	"㤹":  "%E3%A4%B9",
-	"\n": "%0A",
-	"\r": "%0D",
+	"aaaa":   "aaaa",
+	"Ā":      "%C4%80",
+	"Ā㤹":     "%C4%80%E3%A4%B9",
+	"bbĀ㤹":   "bb%C4%80%E3%A4%B9",
+	"Ā㤹bb":   "%C4%80%E3%A4%B9bb",
+	"bbĀ㤹bb": "bb%C4%80%E3%A4%B9bb",
+	"㤹":      "%E3%A4%B9",
+	"\n":     "%0A",
+	"\r":     "%0D",
 }
 
 func TestEscaping(t *testing.T) {
 	for str, expected := range ESCAPE_TESTS {
-		if Rfc3986Escape(str) != expected {
-			t.Errorf("Escaped %v was %v, expected %v", str, Rfc3986Escape(str), expected)
+		actual := Rfc3986Escape(str)
+		if actual != expected {
+			t.Errorf("Escaped %v was %v, expected %v", str, actual, expected)
 		}
 	}
 }
