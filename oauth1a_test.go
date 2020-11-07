@@ -188,6 +188,30 @@ func TestTimestampOverride(t *testing.T) {
 	}
 }
 
+func TestUnencodedSecrets(t *testing.T) {
+	var unencodedClient = &ClientConfig{
+		ConsumerKey:    "consumer_key_Ā",
+		ConsumerSecret: "consumer_secret_Ā",
+		CallbackURL:    "https://example.com/callback",
+	}
+	var unencodedService = &Service{
+		RequestURL:   "https://example.com/request_token",
+		AuthorizeURL: "https://example.com/request_token",
+		AccessURL:    "https://example.com/request_token",
+		ClientConfig: unencodedClient,
+		Signer:       signer,
+	}
+	api_url := "https://example.com/endpoint"
+	request, _ := http.NewRequest("GET", api_url, nil)
+	unencodedService.Sign(request, user)
+	params, _ := signer.GetOAuthParams(request, unencodedClient, user, "nonce", "timestamp")
+	signature := params["oauth_signature"]
+	expected := "RObyHrQZs1/Cxy2QkBv+NpNbD50="
+	if signature != expected {
+		t.Errorf("Signature %v did not match expected %v", signature, expected)
+	}
+}
+
 var ESCAPE_TESTS = map[string]string{
 	"aaaa":   "aaaa",
 	"Ā":      "%C4%80",

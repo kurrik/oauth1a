@@ -127,7 +127,7 @@ func (s *HmacSha1Signer) GetOAuthParams(request *http.Request, clientConfig *Cli
 // Calculates the HMAC-SHA1 signature of a base string, given a consumer and
 // token secret.
 func (s *HmacSha1Signer) GetSignature(consumerSecret string, tokenSecret string, signatureBase string) string {
-	signingKey := consumerSecret + "&" + tokenSecret
+	signingKey := Rfc3986Escape(consumerSecret) + "&" + Rfc3986Escape(tokenSecret)
 	signer := hmac.New(sha1.New, []byte(signingKey))
 	signer.Write([]byte(signatureBase))
 	oauthSignature := base64.StdEncoding.EncodeToString(signer.Sum(nil))
