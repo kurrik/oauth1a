@@ -15,6 +15,7 @@
 package oauth1a
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -80,7 +81,7 @@ func TestGetRequestToken(t *testing.T) {
 	service, _ := GetTwitterConfig(t)
 	userConfig := new(UserConfig)
 	httpClient := new(http.Client)
-	err := userConfig.GetRequestToken(service, httpClient)
+	err := userConfig.GetRequestToken(context.Background(), service, httpClient)
 	if err != nil {
 		t.Errorf("Response had an error: %v", err)
 	}

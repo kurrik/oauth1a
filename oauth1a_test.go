@@ -44,7 +44,10 @@ func TestSignature(t *testing.T) {
 	api_url := "https://example.com/endpoint"
 	request, _ := http.NewRequest("GET", api_url, nil)
 	service.Sign(request, user)
-	params, _ := signer.GetOAuthParams(request, client, user, "nonce", "timestamp")
+	params, _, err := signer.GetOAuthParams(request, client, user, "nonce", "timestamp")
+	if err != nil {
+		t.Errorf("GetOAuthParams returns an error: %v", err)
+	}
 	signature := params["oauth_signature"]
 	expected := "8+ZC6DP8FU3z50qSWDeYCGix2x0="
 	if signature != expected {
@@ -62,7 +65,10 @@ func TestNewlineInParameter(t *testing.T) {
 	service.Sign(request, user)
 	nonce := "a87d3d52a22f467e956bd62aece16386"
 	timestamp := "1364836266"
-	params, base := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	params, base, err := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	if err != nil {
+		t.Errorf("GetOAuthParams returns an error: %v", err)
+	}
 	t.Logf("Signature Base String: %v\n", base)
 	signature := params["oauth_signature"]
 	expected := "5ODYPjb2rDgLfTEiJBdtaeqx0tw="
@@ -81,7 +87,10 @@ func TestNewLineCarriageReturnInParameter(t *testing.T) {
 	service.Sign(request, user)
 	nonce := "a87d3d52a22f467e956bd62aece16386"
 	timestamp := "1364836266"
-	params, base := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	params, base, err := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	if err != nil {
+		t.Errorf("GetOAuthParams returns an error: %v", err)
+	}
 	t.Logf("Signature Base String: %v\n", base)
 	signature := params["oauth_signature"]
 	expected := "b51+W8Igb0m4xcP1Hysr6CBJo4o="
@@ -100,7 +109,10 @@ func TestSlashInParameter(t *testing.T) {
 	service.Sign(request, user)
 	nonce := "bf2cb6d611e59f99103238fc9a3bb8d8"
 	timestamp := "1362434376"
-	params, _ := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	params, _, err := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	if err != nil {
+		t.Errorf("GetOAuthParams returns an error: %v", err)
+	}
 	signature := params["oauth_signature"]
 	expected := "LcxylEOnNdgoKSJi7jX07mxcvfM="
 	if signature != expected {
@@ -127,7 +139,10 @@ func TestSlashInQuerystring(t *testing.T) {
 	if raw_query != expected {
 		t.Errorf("Query parameter incorrect, got %v, expected %v", raw_query, expected)
 	}
-	params, _ := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	params, _, err := signer.GetOAuthParams(request, client, user, nonce, timestamp)
+	if err != nil {
+		t.Errorf("GetOAuthParams returns an error: %v", err)
+	}
 	signature := params["oauth_signature"]
 	expected = "OAldqvRrKDXRGZ9BqSi2CqeVH0g="
 	if signature != expected {
@@ -204,7 +219,10 @@ func TestUnencodedSecrets(t *testing.T) {
 	api_url := "https://example.com/endpoint"
 	request, _ := http.NewRequest("GET", api_url, nil)
 	unencodedService.Sign(request, user)
-	params, _ := signer.GetOAuthParams(request, unencodedClient, user, "nonce", "timestamp")
+	params, _, err := signer.GetOAuthParams(request, unencodedClient, user, "nonce", "timestamp")
+	if err != nil {
+		t.Errorf("GetOAuthParams returns an error: %v", err)
+	}
 	signature := params["oauth_signature"]
 	expected := "RObyHrQZs1/Cxy2QkBv+NpNbD50="
 	if signature != expected {
