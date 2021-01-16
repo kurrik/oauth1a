@@ -100,3 +100,9 @@ manner.
 |-|-|
 | v0.1.0 | Initial library version. |
 | v0.1.1 | Added `context` support. |
+
+Versions are released with:
+```
+git tag v0.1.0
+git push origin v0.1.0
+```
