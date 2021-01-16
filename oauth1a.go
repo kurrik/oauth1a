@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	// it limits to reading HTTP error responses to prevent large error responses
+	// It limits to reading HTTP error responses to prevent large error responses.
 	errBodyLimit = 1024
 )
 
