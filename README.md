@@ -52,13 +52,14 @@ As a vague example, here is code to configure the library for accessing Twitter:
 To obtain user credentials:
 
     httpClient := new(http.Client)
+    ctx := context.Background()
     userConfig := &oauth1a.UserConfig{}
-    userConfig.GetRequestToken(service, httpClient)
+    userConfig.GetRequestToken(ctx, service, httpClient)
     url, _ := userConfig.GetAuthorizeURL(service)
     var token string
     var verifier string
     // Redirect the user to <url> and parse out token and verifier from the response.
-    userConfig.GetAccessToken(token, verifier, service, httpClient)
+    userConfig.GetAccessToken(ctx, token, verifier, service, httpClient)
 
 Or if you have existing credentials:
 
@@ -93,3 +94,9 @@ to complete it.  This is a best practice but imposes a requirement for the
 auth flow to be stateful.  If you understand the risks in removing this check
 from your application, it is possible to implement the flow in a stateless
 manner.
+
+## Version history
+| Version | Changes |
+|-|-|
+| v0.1.0 | Initial library version. |
+| v0.1.1 | Added `context` support. |
