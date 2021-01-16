@@ -2,6 +2,8 @@
 ## Summary
 An implementation of OAuth 1.0a in Go1.
 
+* [API reference](https://pkg.go.dev/github.com/kurrik/oauth1a)
+
 ## Installing
 Run:
 
